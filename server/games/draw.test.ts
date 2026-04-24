@@ -35,7 +35,7 @@ describe('DrawEngine', () => {
   });
 
   it('scores correct guess', () => {
-    const state: any = engine.init(makePlayers(2), settings);
+    const state: any = engine.init(makePlayers(3), settings);
     const word = state.word;
     const result = engine.handleAction(state, 'p2', { type: 'guess', text: word });
     expect(result.state.guessedPlayerIds).toContain('p2');
@@ -44,8 +44,8 @@ describe('DrawEngine', () => {
 
   it('tick decrements timeLeft', () => {
     const state: any = engine.init(makePlayers(2), settings);
-    state.timeLeft = 1;
+    state.timeLeft = 5;
     const result = engine.tick!(state);
-    expect(result.state.timeLeft).toBe(0);
+    expect(result.state.timeLeft).toBe(4);
   });
 });
