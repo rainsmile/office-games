@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import type { ClientEvents, ServerEvents, Room } from '@/lib/types';
 
@@ -8,65 +8,112 @@ const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001'
 
 type TypedSocket = Socket<ServerEvents, ClientEvents>;
 
+let _socket: TypedSocket | null = null;
+let _room: Room | null = null;
+let _playerId: string | null = null;
+let _connected = false;
+let _error: string | null = null;
+const _subs = new Set<() => void>();
+
+function notify() {
+  _subs.forEach((fn) => fn());
+}
+
+function getSocket(): TypedSocket {
+  if (_socket) return _socket;
+
+  _socket = io(SERVER_URL, { autoConnect: true });
+
+  _socket.on('connect', () => {
+    _connected = true;
+    notify();
+    const pid = sessionStorage.getItem('gg-pid');
+    const rc = sessionStorage.getItem('gg-rc');
+    if (pid && rc) {
+      _socket!.emit('room:rejoin', { playerId: pid, roomCode: rc });
+    }
+  });
+
+  _socket.on('disconnect', () => {
+    _connected = false;
+    notify();
+  });
+
+  _socket.on('room:state', (data) => {
+    _room = data;
+    notify();
+  });
+
+  _socket.on('room:created', ({ code, playerId }) => {
+    _playerId = playerId;
+    sessionStorage.setItem('gg-pid', playerId);
+    sessionStorage.setItem('gg-rc', code);
+    notify();
+  });
+
+  _socket.on('room:joined', ({ playerId }) => {
+    _playerId = playerId;
+    sessionStorage.setItem('gg-pid', playerId);
+    notify();
+  });
+
+  _socket.on('room:error', ({ message }) => {
+    _error = message;
+    notify();
+  });
+
+  return _socket;
+}
+
 export function useSocket() {
-  const socketRef = useRef<TypedSocket | null>(null);
-  const [connected, setConnected] = useState(false);
-  const [room, setRoom] = useState<Room | null>(null);
-  const [playerId, setPlayerId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [, rerender] = useState(0);
 
   useEffect(() => {
-    const socket: TypedSocket = io(SERVER_URL, { autoConnect: true });
-    socketRef.current = socket;
-
-    socket.on('connect', () => setConnected(true));
-    socket.on('disconnect', () => setConnected(false));
-    socket.on('room:state', (data) => setRoom(data));
-    socket.on('room:created', ({ playerId: pid }) => setPlayerId(pid));
-    socket.on('room:joined', ({ playerId: pid }) => setPlayerId(pid));
-    socket.on('room:error', ({ message }) => setError(message));
-
+    getSocket();
+    const sub = () => rerender((n) => n + 1);
+    _subs.add(sub);
     return () => {
-      socket.disconnect();
+      _subs.delete(sub);
     };
   }, []);
 
   const createRoom = useCallback((nickname: string) => {
-    setError(null);
-    socketRef.current?.emit('room:create', { nickname });
+    _error = null;
+    getSocket().emit('room:create', { nickname });
   }, []);
 
   const joinRoom = useCallback((nickname: string, code: string) => {
-    setError(null);
-    socketRef.current?.emit('room:join', { nickname, code: code.toUpperCase() });
+    _error = null;
+    sessionStorage.setItem('gg-rc', code.toUpperCase());
+    getSocket().emit('room:join', { nickname, code: code.toUpperCase() });
   }, []);
 
   const startGame = useCallback((game: string) => {
-    socketRef.current?.emit('room:start', { game: game as any });
+    getSocket().emit('room:start', { game: game as any });
   }, []);
 
   const sendAction = useCallback((action: any) => {
-    socketRef.current?.emit('game:action', action);
+    getSocket().emit('game:action', action);
   }, []);
 
   const sendStroke = useCallback((stroke: any) => {
-    socketRef.current?.emit('draw:stroke', stroke);
+    getSocket().emit('draw:stroke', stroke);
   }, []);
 
   const updateSettings = useCallback((settings: any) => {
-    socketRef.current?.emit('room:settings', settings);
+    getSocket().emit('room:settings', settings);
   }, []);
 
   const kickPlayer = useCallback((targetId: string) => {
-    socketRef.current?.emit('room:kick', { playerId: targetId });
+    getSocket().emit('room:kick', { playerId: targetId });
   }, []);
 
   return {
-    socket: socketRef.current,
-    connected,
-    room,
-    playerId,
-    error,
+    socket: _socket,
+    connected: _connected,
+    room: _room,
+    playerId: _playerId,
+    error: _error,
     createRoom,
     joinRoom,
     startGame,

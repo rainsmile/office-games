@@ -101,6 +101,25 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('room:rejoin', ({ playerId, roomCode }) => {
+    const room = roomManager.getRoom(roomCode);
+    if (!room) return;
+    const player = room.players.find((p) => p.id === playerId);
+    if (!player) return;
+    playerSocketMap.set(playerId, socket.id);
+    socketPlayerMap.set(socket.id, { playerId, roomCode });
+    socket.join(roomCode);
+    roomManager.setPlayerOnline(roomCode, playerId, true);
+    socket.emit('room:joined', { playerId });
+    broadcastRoomState(roomCode);
+    if (room.status === 'playing' && room.currentGame) {
+      const engine = getGameEngine(room.currentGame);
+      if (engine) {
+        socket.emit('game:state', engine.getClientState(room.gameState, playerId));
+      }
+    }
+  });
+
   socket.on('room:start', async ({ game }) => {
     const info = socketPlayerMap.get(socket.id);
     if (!info) return;
