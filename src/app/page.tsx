@@ -1,65 +1,134 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSocket } from '@/hooks/useSocket';
+import { usePlayerHistory } from '@/hooks/usePlayerHistory';
+
+export default function LobbyPage() {
+  const router = useRouter();
+  const { connected, room, playerId, error, createRoom, joinRoom } = useSocket();
+  const { history, setNickname: saveNickname } = usePlayerHistory();
+  const [nickname, setNickname] = useState(history.nickname);
+  const [roomCode, setRoomCode] = useState('');
+  const [mode, setMode] = useState<'home' | 'join'>('home');
+
+  useEffect(() => {
+    if (room && room.code) {
+      saveNickname(nickname);
+      router.push(`/room/${room.code}`);
+    }
+  }, [room, nickname, router, saveNickname]);
+
+  const handleCreate = () => {
+    if (!nickname.trim()) return;
+    createRoom(nickname.trim());
+  };
+
+  const handleJoin = () => {
+    if (!nickname.trim() || !roomCode.trim()) return;
+    joinRoom(nickname.trim(), roomCode.trim());
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-5xl font-extrabold mb-2">🎮 Game Zone</h1>
+          <p className="text-white/70 text-lg">和同事来一局吧！</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+
+        <div className="card space-y-4">
+          <div>
+            <label className="block text-sm text-white/60 mb-1">你的昵称</label>
+            <input
+              type="text"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="输入昵称..."
+              maxLength={12}
+              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-white/50"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          </div>
+
+          {error && (
+            <div className="bg-red-500/30 border border-red-400/50 rounded-xl px-4 py-2 text-sm">
+              {error}
+            </div>
+          )}
+
+          {mode === 'home' ? (
+            <div className="space-y-3">
+              <button
+                onClick={handleCreate}
+                disabled={!connected || !nickname.trim()}
+                className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                创建房间
+              </button>
+              <button
+                onClick={() => setMode('join')}
+                className="w-full btn-secondary"
+              >
+                加入房间
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm text-white/60 mb-1">房间码</label>
+                <input
+                  type="text"
+                  value={roomCode}
+                  onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                  placeholder="输入6位房间码..."
+                  maxLength={6}
+                  className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-white/50 tracking-widest text-center text-xl"
+                />
+              </div>
+              <button
+                onClick={handleJoin}
+                disabled={!connected || !nickname.trim() || roomCode.length !== 6}
+                className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                加入
+              </button>
+              <button onClick={() => setMode('home')} className="w-full btn-secondary">
+                返回
+              </button>
+            </div>
+          )}
+
+          {!connected && (
+            <p className="text-center text-yellow-300/70 text-sm">正在连接服务器...</p>
+          )}
         </div>
-      </main>
+
+        {history.totalGames > 0 && (
+          <div className="card mt-4">
+            <h3 className="font-semibold mb-2">📊 战绩</h3>
+            <div className="flex justify-around text-center">
+              <div>
+                <div className="text-2xl font-bold">{history.totalGames}</div>
+                <div className="text-sm text-white/60">总场次</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{history.totalWins}</div>
+                <div className="text-sm text-white/60">获胜</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold">
+                  {history.totalGames > 0
+                    ? Math.round((history.totalWins / history.totalGames) * 100)
+                    : 0}
+                  %
+                </div>
+                <div className="text-sm text-white/60">胜率</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
