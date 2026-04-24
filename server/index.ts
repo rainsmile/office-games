@@ -2,6 +2,11 @@ import './games/draw';
 import './games/emoji';
 import './games/spy';
 import './games/quiz';
+import './games/rank';
+import './games/story';
+import './games/music';
+import { getTracksFromPlaylist } from './spotify';
+import { MusicEngine } from './games/music';
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -96,7 +101,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('room:start', ({ game }) => {
+  socket.on('room:start', async ({ game }) => {
     const info = socketPlayerMap.get(socket.id);
     if (!info) return;
     const room = roomManager.getRoom(info.roomCode);
@@ -105,7 +110,17 @@ io.on('connection', (socket) => {
     const engine = getGameEngine(game);
     if (!engine) return;
 
-    const state = engine.init(room.players, room.settings);
+    let state: unknown;
+    if (game === 'music') {
+      try {
+        const tracks = await getTracksFromPlaylist('chinese-pop', room.settings.rounds);
+        state = (engine as MusicEngine).initWithTracks(room.players, room.settings, tracks);
+      } catch {
+        state = engine.init(room.players, room.settings);
+      }
+    } else {
+      state = engine.init(room.players, room.settings);
+    }
     roomManager.setGameState(info.roomCode, game, state);
     broadcastRoomState(info.roomCode);
     broadcastGameState(info.roomCode);
