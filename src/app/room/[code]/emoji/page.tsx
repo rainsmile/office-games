@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import { useSocket } from '@/hooks/useSocket';
 import StatusBar from '@/components/StatusBar';
@@ -18,6 +18,7 @@ interface ChatMessage {
 
 export default function EmojiPage() {
   const params = useParams();
+  const router = useRouter();
   const code = params.code as string;
   const { room, playerId, socket, sendAction } = useSocket();
   const [gameState, setGameState] = useState<any>(null);
@@ -51,6 +52,10 @@ export default function EmojiPage() {
     socket.on('game:event', handleEvent);
     return () => { socket.off('game:state', handleState); socket.off('game:event', handleEvent); };
   }, [socket, room?.players]);
+
+  useEffect(() => {
+    if (room?.status === 'result') router.push(`/room/${code}/result`);
+  }, [room?.status, code, router]);
 
   const handleSendEmojis = () => {
     sendAction({ type: 'set-emojis', emojis: emojiInput });

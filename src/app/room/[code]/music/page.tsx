@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { useSocket } from '@/hooks/useSocket';
 import StatusBar from '@/components/StatusBar';
@@ -10,6 +10,7 @@ import ToastContainer, { showToast } from '@/components/Toast';
 
 export default function MusicPage() {
   const params = useParams();
+  const router = useRouter();
   const code = params.code as string;
   const { room, playerId, socket, sendAction } = useSocket();
   const [gameState, setGameState] = useState<any>(null);
@@ -40,6 +41,10 @@ export default function MusicPage() {
     socket.on('game:event', handleEvent);
     return () => { socket.off('game:state', handleState); socket.off('game:event', handleEvent); };
   }, [socket, room?.players]);
+
+  useEffect(() => {
+    if (room?.status === 'result') router.push(`/room/${code}/result`);
+  }, [room?.status, code, router]);
 
   if (!room || !gameState) {
     return <div className="min-h-screen flex items-center justify-center"><p>加载中...</p></div>;

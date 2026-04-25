@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import { useSocket } from '@/hooks/useSocket';
 import StatusBar from '@/components/StatusBar';
@@ -10,6 +10,7 @@ import ToastContainer, { showToast } from '@/components/Toast';
 
 export default function RankPage() {
   const params = useParams();
+  const router = useRouter();
   const code = params.code as string;
   const { room, playerId, socket, sendAction } = useSocket();
   const [gameState, setGameState] = useState<any>(null);
@@ -32,6 +33,10 @@ export default function RankPage() {
     socket.on('game:event', handleEvent);
     return () => { socket.off('game:state', handleState); socket.off('game:event', handleEvent); };
   }, [socket, order.length]);
+
+  useEffect(() => {
+    if (room?.status === 'result') router.push(`/room/${code}/result`);
+  }, [room?.status, code, router]);
 
   const handleDragStart = (index: number) => setDragIndex(index);
 

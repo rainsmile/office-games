@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import { useSocket } from '@/hooks/useSocket';
 import StatusBar from '@/components/StatusBar';
@@ -20,6 +20,7 @@ interface ChatMessage {
 
 export default function DrawPage() {
   const params = useParams();
+  const router = useRouter();
   const code = params.code as string;
   const { room, playerId, socket, sendAction, sendStroke } = useSocket();
   const [gameState, setGameState] = useState<any>(null);
@@ -69,6 +70,10 @@ export default function DrawPage() {
       socket.off('draw:stroke', handleStroke);
     };
   }, [socket, room?.players]);
+
+  useEffect(() => {
+    if (room?.status === 'result') router.push(`/room/${code}/result`);
+  }, [room?.status, code, router]);
 
   const handleGuess = useCallback((text: string) => {
     sendAction({ type: 'guess', text });
