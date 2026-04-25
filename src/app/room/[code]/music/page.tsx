@@ -20,7 +20,7 @@ export default function MusicPage() {
     if (!socket) return;
     const handleState = (state: any) => {
       setGameState(state);
-      if (audioRef.current && state.previewUrl) {
+      if (audioRef.current && state.previewUrl && audioRef.current.src !== state.previewUrl) {
         audioRef.current.src = state.previewUrl;
         audioRef.current.play().catch(() => {});
       }
