@@ -21,7 +21,7 @@ const GAMES: { id: GameType; name: string; emoji: string; minPlayers: number }[]
 export default function RoomPage() {
   const params = useParams();
   const router = useRouter();
-  const { room, playerId, startGame, kickPlayer, updateSettings, socket } = useSocket();
+  const { room, playerId, startGame, kickPlayer, updateSettings, leaveRoom, socket } = useSocket();
 
   const code = params.code as string;
   const isHost = room?.hostId === playerId;
@@ -114,6 +114,13 @@ export default function RoomPage() {
         </div>
         {!isHost && <p className="text-center text-white/40 text-sm mt-3">等待房主选择游戏...</p>}
       </div>
+
+      <button
+        onClick={() => { leaveRoom(); router.push('/'); }}
+        className="w-full btn-secondary text-red-300 hover:text-red-200"
+      >
+        退出房间
+      </button>
     </div>
   );
 }

@@ -111,6 +111,7 @@ export interface ClientEvents {
   'room:create': (data: { nickname: string }) => void;
   'room:join': (data: { nickname: string; code: string }) => void;
   'room:rejoin': (data: { playerId: string; roomCode: string }) => void;
+  'room:leave': () => void;
   'room:start': (data: { game: GameType }) => void;
   'room:kick': (data: { playerId: string }) => void;
   'room:settings': (data: Partial<RoomSettings>) => void;

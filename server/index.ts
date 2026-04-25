@@ -120,6 +120,17 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('room:leave', () => {
+    const info = socketPlayerMap.get(socket.id);
+    if (!info) return;
+    roomManager.removePlayer(info.roomCode, info.playerId);
+    socket.leave(info.roomCode);
+    socketPlayerMap.delete(socket.id);
+    playerSocketMap.delete(info.playerId);
+    io.to(info.roomCode).emit('room:player-left', { playerId: info.playerId });
+    broadcastRoomState(info.roomCode);
+  });
+
   socket.on('room:start', async ({ game }) => {
     const info = socketPlayerMap.get(socket.id);
     if (!info) return;

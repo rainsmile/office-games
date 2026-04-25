@@ -104,6 +104,15 @@ export function useSocket() {
     getSocket().emit('room:settings', settings);
   }, []);
 
+  const leaveRoom = useCallback(() => {
+    getSocket().emit('room:leave');
+    _room = null;
+    _playerId = null;
+    sessionStorage.removeItem('gg-pid');
+    sessionStorage.removeItem('gg-rc');
+    notify();
+  }, []);
+
   const kickPlayer = useCallback((targetId: string) => {
     getSocket().emit('room:kick', { playerId: targetId });
   }, []);
@@ -120,6 +129,7 @@ export function useSocket() {
     sendAction,
     sendStroke,
     updateSettings,
+    leaveRoom,
     kickPlayer,
   };
 }
