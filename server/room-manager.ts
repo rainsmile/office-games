@@ -40,7 +40,7 @@ export class RoomManager {
       players: [player],
       currentGame: null,
       gameState: null,
-      settings: { rounds: 3, timeLimit: 60 },
+      settings: { rounds: 3, timeLimit: 60, musicGenre: 'chinese-pop' },
       lastActivity: Date.now(),
     };
 

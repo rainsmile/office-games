@@ -66,7 +66,7 @@ export default function RoomPage() {
       {isHost && (
         <div className="card">
           <h2 className="font-bold text-lg mb-3">设置</h2>
-          <div className="flex items-center gap-4 text-sm">
+          <div className="flex flex-wrap items-center gap-4 text-sm">
             <label className="text-white/60">回合数</label>
             <select
               value={room.settings.rounds}
@@ -86,6 +86,18 @@ export default function RoomPage() {
               {[30, 45, 60, 90].map((n) => (
                 <option key={n} value={n} className="bg-gray-800">{n} 秒</option>
               ))}
+            </select>
+            <label className="text-white/60">曲库</label>
+            <select
+              value={room.settings.musicGenre}
+              onChange={(e) => updateSettings({ musicGenre: e.target.value })}
+              className="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5"
+            >
+              <option value="chinese-pop" className="bg-gray-800">华语流行</option>
+              <option value="western-pop" className="bg-gray-800">欧美流行</option>
+              <option value="kpop" className="bg-gray-800">韩语流行</option>
+              <option value="jpop" className="bg-gray-800">日语流行</option>
+              <option value="classic-chinese" className="bg-gray-800">经典老歌</option>
             </select>
           </div>
         </div>

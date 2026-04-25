@@ -143,7 +143,7 @@ io.on('connection', (socket) => {
     let state: unknown;
     if (game === 'music') {
       try {
-        const tracks = await getTracksFromPlaylist('chinese-pop', room.settings.rounds);
+        const tracks = await getTracksFromPlaylist(room.settings.musicGenre || 'chinese-pop', room.settings.rounds);
         state = (engine as MusicEngine).initWithTracks(room.players, room.settings, tracks);
       } catch {
         state = engine.init(room.players, room.settings);

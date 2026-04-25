@@ -4,14 +4,37 @@ export interface TrackInfo {
   previewUrl: string;
 }
 
-const SEARCH_QUERIES = [
-  '周杰伦', '林俊杰', '陈奕迅', '薛之谦', '邓紫棋',
-  '毛不易', '李荣浩', '华晨宇', '张学友', '王力宏',
-  '五月天', '蔡依林', '孙燕姿', '萧敬腾', '李宇春',
-];
+const GENRE_QUERIES: Record<string, string[]> = {
+  'chinese-pop': [
+    '周杰伦', '林俊杰', '陈奕迅', '薛之谦', '邓紫棋',
+    '毛不易', '李荣浩', '华晨宇', '张学友', '王力宏',
+    '五月天', '蔡依林', '孙燕姿', '萧敬腾', '李宇春',
+  ],
+  'western-pop': [
+    'Taylor Swift', 'Ed Sheeran', 'Adele', 'Bruno Mars', 'The Weeknd',
+    'Dua Lipa', 'Justin Bieber', 'Billie Eilish', 'Ariana Grande', 'Harry Styles',
+    'Coldplay', 'Maroon 5', 'Imagine Dragons', 'Lady Gaga', 'Post Malone',
+  ],
+  'kpop': [
+    'BTS', 'BLACKPINK', 'IU', 'EXO', 'TWICE',
+    'Stray Kids', 'aespa', 'NewJeans', 'Red Velvet', '(G)I-DLE',
+    'SEVENTEEN', 'TXT', 'LE SSERAFIM', 'ITZY', 'NCT',
+  ],
+  'jpop': [
+    'YOASOBI', '米津玄師', 'Ado', 'Official髭男dism', 'LiSA',
+    '藤井風', 'back number', 'King Gnu', 'Mrs. GREEN APPLE', 'Aimer',
+    'ONE OK ROCK', 'あいみょん', '優里', 'Vaundy', 'RADWIMPS',
+  ],
+  'classic-chinese': [
+    '邓丽君', '张国荣', '罗大佑', '崔健', '刘德华',
+    '王菲', '李宗盛', '周华健', '蔡琴', '齐秦',
+    '童安格', '赵传', '伍佰', '张信哲', '任贤齐',
+  ],
+};
 
-export async function getTracksFromPlaylist(_genre: string, count: number): Promise<TrackInfo[]> {
-  const queries = SEARCH_QUERIES.sort(() => Math.random() - 0.5);
+export async function getTracksFromPlaylist(genre: string, count: number): Promise<TrackInfo[]> {
+  const queries = (GENRE_QUERIES[genre] || GENRE_QUERIES['chinese-pop'])
+    .sort(() => Math.random() - 0.5);
 
   const results = await Promise.allSettled(
     queries.slice(0, 6).map(async (query) => {

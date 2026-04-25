@@ -13,6 +13,7 @@ export interface Player {
 export interface RoomSettings {
   rounds: number;
   timeLimit: number;
+  musicGenre: string;
 }
 
 export interface Room {
