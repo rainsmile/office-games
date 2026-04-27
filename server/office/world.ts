@@ -2,6 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { getFloorPlan, GRID_ROWS, GRID_COLS, ZONES } from './floor-plan';
 import type { FloorCell } from './floor-plan';
+import { getDefaultEquipment, calcEquipmentBonus, getNextTier, EQUIPMENT_TYPES } from './equipment';
+import type { PlayerEquipment } from './equipment';
 
 const SAVE_PATH = path.join(__dirname, '../../data/office-world.json');
 const CYCLE_SECONDS = 5;
@@ -17,7 +19,7 @@ export interface OfficeCell {
 
 export interface OfficePlayer {
   id: string;
-  nickname: string;
+  username: string;
   color: string;
   coins: number;
   energy: number;
@@ -25,6 +27,7 @@ export interface OfficePlayer {
   online: boolean;
   lastSeen: number;
   joinedAt: number;
+  equipment: PlayerEquipment;
 }
 
 export interface OfficeWorld {
@@ -80,28 +83,28 @@ export class WorldManager {
 
   markDirty() { this.dirty = true; }
 
-  addPlayer(nickname: string, existingId?: string): OfficePlayer {
-    if (existingId && this.world.players[existingId]) {
-      const p = this.world.players[existingId];
+  joinPlayer(playerId: string, username: string): OfficePlayer {
+    if (this.world.players[playerId]) {
+      const p = this.world.players[playerId];
       p.online = true;
-      p.nickname = nickname;
+      if (!p.equipment) p.equipment = getDefaultEquipment();
       this.calcOfflineIncome(p);
       this.markDirty();
       return p;
     }
 
-    const id = 'op_' + Math.random().toString(36).slice(2, 10);
     const colorIdx = Object.keys(this.world.players).length;
     const player: OfficePlayer = {
-      id, nickname,
+      id: playerId, username,
       color: PLAYER_COLORS[colorIdx % PLAYER_COLORS.length],
       coins: 20, energy: 5, kpi: 0,
       online: true, lastSeen: Date.now(), joinedAt: Date.now(),
+      equipment: getDefaultEquipment(),
     };
 
-    this.world.players[id] = player;
-    this.assignStartingCells(id);
-    this.addLog(`${nickname} 入职了！`);
+    this.world.players[playerId] = player;
+    this.assignStartingCells(playerId);
+    this.addLog(`${username} 入职了！`);
     this.markDirty();
     return player;
   }
@@ -124,7 +127,7 @@ export class WorldManager {
     const earned = Math.floor(offlineCycles * cellCount * 0.3);
     if (earned > 0) {
       player.coins += earned;
-      this.addLog(`${player.nickname} 回来了，离线赚了 ${earned} 💰`);
+      this.addLog(`${player.username} 回来了，离线赚了 ${earned} 💰`);
     }
   }
 
@@ -204,6 +207,30 @@ export class WorldManager {
       }
     }
     return c;
+  }
+
+  getEfficiencyMultiplier(playerId: string): number {
+    const p = this.world.players[playerId];
+    if (!p?.equipment) return 1;
+    return 1 + calcEquipmentBonus(p.equipment);
+  }
+
+  buyEquipment(playerId: string, equipmentId: string): { ok: true; newLevel: number } | { ok: false; error: string } {
+    const p = this.world.players[playerId];
+    if (!p) return { ok: false, error: '玩家不存在' };
+    if (!p.equipment) p.equipment = getDefaultEquipment();
+
+    const currentLevel = p.equipment[equipmentId] ?? 0;
+    const next = getNextTier(equipmentId, currentLevel);
+    if (!next) return { ok: false, error: '已满级' };
+    if (p.coins < next.price) return { ok: false, error: `金币不足，需要 ${next.price}💰` };
+
+    p.coins -= next.price;
+    p.equipment[equipmentId] = next.level;
+    const typeDef = EQUIPMENT_TYPES.find(t => t.id === equipmentId);
+    this.addLog(`${p.username} 购入了 ${next.name}！`);
+    this.markDirty();
+    return { ok: true, newLevel: next.level };
   }
 
   addLog(text: string) {

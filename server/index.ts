@@ -256,6 +256,8 @@ setInterval(() => roomManager.cleanup(), 60 * 1000);
 // ======= Office Showdown: Persistent World =======
 import { WorldManager } from './office/world';
 import { resolveCycle, PendingAction } from './office/actions';
+import { register, login, getUsername } from './office/users';
+import { EQUIPMENT_TYPES } from './office/equipment';
 
 const worldManager = new WorldManager();
 const officePending = new Map<string, PendingAction>();
@@ -291,11 +293,42 @@ setInterval(() => {
 setInterval(() => worldManager.save(), 30 * 1000);
 
 officeNs.on('connection', (socket: any) => {
-  socket.on('office:join', ({ nickname, existingId }: { nickname: string; existingId?: string }) => {
-    const player = worldManager.addPlayer(nickname, existingId);
+  socket.on('office:register', ({ username, password }: { username: string; password: string }) => {
+    const result = register(username, password);
+    if (!result.ok) {
+      socket.emit('office:error', { message: result.error });
+      return;
+    }
+    const player = worldManager.joinPlayer(result.playerId, username);
     officeSocketMap.set(socket.id, player.id);
     officePlayerSocket.set(player.id, socket.id);
-    socket.emit('office:joined', { playerId: player.id });
+    socket.emit('office:joined', { playerId: player.id, username });
+    broadcastOfficeState();
+  });
+
+  socket.on('office:login', ({ username, password }: { username: string; password: string }) => {
+    const result = login(username, password);
+    if (!result.ok) {
+      socket.emit('office:error', { message: result.error });
+      return;
+    }
+    const player = worldManager.joinPlayer(result.playerId, username);
+    officeSocketMap.set(socket.id, player.id);
+    officePlayerSocket.set(player.id, socket.id);
+    socket.emit('office:joined', { playerId: player.id, username });
+    broadcastOfficeState();
+  });
+
+  socket.on('office:reconnect', ({ playerId }: { playerId: string }) => {
+    const username = getUsername(playerId);
+    if (!username || !worldManager.world.players[playerId]) {
+      socket.emit('office:error', { message: '会话失效，请重新登录' });
+      return;
+    }
+    const player = worldManager.joinPlayer(playerId, username);
+    officeSocketMap.set(socket.id, player.id);
+    officePlayerSocket.set(player.id, socket.id);
+    socket.emit('office:joined', { playerId: player.id, username });
     broadcastOfficeState();
   });
 
@@ -304,6 +337,18 @@ officeNs.on('connection', (socket: any) => {
     if (!pid) return;
     officePending.set(pid, { playerId: pid, ...action });
     socket.emit('office:action-ack', { action: action.type });
+  });
+
+  socket.on('office:buy-equipment', ({ equipmentId }: { equipmentId: string }) => {
+    const pid = officeSocketMap.get(socket.id);
+    if (!pid) return;
+    const result = worldManager.buyEquipment(pid, equipmentId);
+    socket.emit('office:buy-result', result);
+    if (result.ok) broadcastOfficeState();
+  });
+
+  socket.on('office:get-shop', () => {
+    socket.emit('office:shop-data', { types: EQUIPMENT_TYPES });
   });
 
   socket.on('disconnect', () => {
