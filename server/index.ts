@@ -253,7 +253,71 @@ io.on('connection', (socket) => {
 
 setInterval(() => roomManager.cleanup(), 60 * 1000);
 
+// ======= Office Showdown: Persistent World =======
+import { WorldManager } from './office/world';
+import { resolveCycle, PendingAction } from './office/actions';
+
+const worldManager = new WorldManager();
+const officePending = new Map<string, PendingAction>();
+const officeSocketMap = new Map<string, string>(); // socketId → playerId
+const officePlayerSocket = new Map<string, string>(); // playerId → socketId
+
+const officeNs: any = io.of('/office');
+
+function broadcastOfficeState() {
+  const w = worldManager.world;
+  const clientState = {
+    grid: w.grid,
+    players: w.players,
+    tick: w.tick,
+    log: w.log.slice(-20),
+    gridSize: worldManager.getGridSize(),
+    cycleSeconds: worldManager.getCycleSeconds(),
+  };
+  officeNs.emit('office:state', clientState);
+}
+
+setInterval(() => {
+  const events = resolveCycle(worldManager, officePending);
+  worldManager.save();
+  broadcastOfficeState();
+  for (const event of events) {
+    officeNs.emit('office:event', event);
+  }
+}, worldManager.getCycleSeconds() * 1000);
+
+// Save periodically
+setInterval(() => worldManager.save(), 30 * 1000);
+
+officeNs.on('connection', (socket: any) => {
+  socket.on('office:join', ({ nickname, existingId }: { nickname: string; existingId?: string }) => {
+    const player = worldManager.addPlayer(nickname, existingId);
+    officeSocketMap.set(socket.id, player.id);
+    officePlayerSocket.set(player.id, socket.id);
+    socket.emit('office:joined', { playerId: player.id });
+    broadcastOfficeState();
+  });
+
+  socket.on('office:action', (action: any) => {
+    const pid = officeSocketMap.get(socket.id);
+    if (!pid) return;
+    officePending.set(pid, { playerId: pid, ...action });
+    socket.emit('office:action-ack', { action: action.type });
+  });
+
+  socket.on('disconnect', () => {
+    const pid = officeSocketMap.get(socket.id);
+    if (pid) {
+      worldManager.setOffline(pid);
+      officeSocketMap.delete(socket.id);
+      officePlayerSocket.delete(pid);
+      broadcastOfficeState();
+    }
+  });
+});
+
 const PORT = process.env.PORT || 3001;
 httpServer.listen(PORT, () => {
   console.log(`Socket.IO server running on port ${PORT}`);
+  console.log(`Office Showdown world loaded (${Object.keys(worldManager.world.players).length} players)`);
 });
