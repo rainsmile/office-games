@@ -134,7 +134,7 @@ export default function LobbyPage() {
         >
           <div className="text-3xl mb-1">🏢</div>
           <h3 className="font-bold">摸鱼公司：办公室争霸</h3>
-          <p className="text-sm text-white/50 mt-1">长期养成 · 自由进出 · 抢工位搞同事</p>
+          <p className="text-sm text-white/50 mt-1">长期养成 · 自由进出 · 抢工位偷袭同事</p>
         </a>
       </div>
     </div>

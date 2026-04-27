@@ -90,10 +90,7 @@ export default function OfficeCell({
             +
           </div>
         ) : (
-          <>
-            <div className="text-sm opacity-30">🪑</div>
-            <div className="text-[7px] text-gray-400 truncate max-w-full px-0.5">{zoneName}</div>
-          </>
+          <div className="text-sm opacity-30">🪑</div>
         )}
       </div>
     </div>

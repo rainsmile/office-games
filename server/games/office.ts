@@ -203,7 +203,7 @@ export class OfficeEngine implements GameEngine {
     const name = s._playerNames[pid];
 
     if (s.players[pid].energy < SABOTAGE_ENERGY_COST) {
-      s.log.push({ text: `${name} 精力不够，搞不动人`, tick: s.tick });
+      s.log.push({ text: `${name} 精力不够，无法偷袭`, tick: s.tick });
       events.push({ type: 'action-result', playerId: pid, action: 'sabotage', success: false });
       return;
     }

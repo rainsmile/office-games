@@ -8,7 +8,7 @@ import type { OfficeCell } from '@/lib/types';
 const ACTION_LABELS: Record<string, string> = {
   work: '💻 工作',
   expand: '🏗 扩张',
-  sabotage: '🧨 搞人',
+  sabotage: '🗡 偷袭',
 };
 
 const CELL_COLORS: Record<string, string> = {};
@@ -145,7 +145,7 @@ export default function OfficePage() {
                 selectedAction === 'sabotage' ? 'bg-red-100 border-red-400 text-red-800' : 'bg-gray-50 border-gray-300 hover:bg-gray-100'
               }`}
             >
-              🧨 搞人
+              🗡 偷袭
             </button>
             {selectedAction && (
               <span className="ml-2 text-xs text-gray-400">
