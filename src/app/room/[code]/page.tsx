@@ -72,7 +72,7 @@ export default function RoomPage() {
             <select
               value={room.settings.rounds}
               onChange={(e) => updateSettings({ rounds: Number(e.target.value) })}
-              className="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5"
+              className="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-white"
             >
               {[2, 3, 5, 7].map((n) => (
                 <option key={n} value={n} className="bg-gray-800">{n} 回合</option>
@@ -82,7 +82,7 @@ export default function RoomPage() {
             <select
               value={room.settings.timeLimit}
               onChange={(e) => updateSettings({ timeLimit: Number(e.target.value) })}
-              className="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5"
+              className="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-white"
             >
               {[30, 45, 60, 90].map((n) => (
                 <option key={n} value={n} className="bg-gray-800">{n} 秒</option>
@@ -92,7 +92,7 @@ export default function RoomPage() {
             <select
               value={room.settings.musicGenre}
               onChange={(e) => updateSettings({ musicGenre: e.target.value })}
-              className="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5"
+              className="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-white"
             >
               <option value="chinese-pop" className="bg-gray-800">华语流行</option>
               <option value="western-pop" className="bg-gray-800">欧美流行</option>

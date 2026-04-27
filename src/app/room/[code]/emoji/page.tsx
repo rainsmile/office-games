@@ -100,7 +100,7 @@ export default function EmojiPage() {
                 value={emojiInput}
                 onChange={(e) => setEmojiInput(e.target.value)}
                 placeholder="输入 emoji 组合..."
-                className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-2xl text-center"
+                className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-2xl text-center text-white placeholder-white/40"
               />
               <button onClick={handleSendEmojis} className="btn-primary">发送</button>
             </div>
