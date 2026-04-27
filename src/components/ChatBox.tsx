@@ -48,7 +48,7 @@ export default function ChatBox({ messages, onSend, placeholder = '输入答案.
           onChange={(e) => setInput(e.target.value)}
           placeholder={placeholder}
           disabled={disabled}
-          className="w-full bg-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none disabled:opacity-50"
+          className="w-full bg-black/25 border border-white/30 rounded-lg px-3 py-2 text-sm text-white placeholder-white/50 focus:outline-none focus:border-white/50 disabled:opacity-50"
         />
       </form>
     </div>

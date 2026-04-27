@@ -114,6 +114,7 @@ export default function DrawPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="md:col-span-2">
           <Canvas
+            key={gameState.round}
             disabled={!isDrawer}
             onStroke={isDrawer ? handleStroke : undefined}
             remoteStrokes={!isDrawer ? remoteStrokes : undefined}
