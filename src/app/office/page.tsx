@@ -8,6 +8,9 @@ const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3001'
 
 interface CellData {
   type: string;
+  zone: string;
+  zoneColor: string;
+  zoneName: string;
   owner: string | null;
   level: number;
 }
@@ -27,7 +30,8 @@ interface WorldState {
   players: Record<string, PlayerData>;
   tick: number;
   log: { text: string; time: number }[];
-  gridSize: number;
+  gridRows: number;
+  gridCols: number;
   cycleSeconds: number;
 }
 
@@ -167,11 +171,11 @@ export default function OfficePage() {
   // Build expandable set
   const expandable = new Set<string>();
   if (playerId) {
-    for (let y = 0; y < world.gridSize; y++) {
-      for (let x = 0; x < world.gridSize; x++) {
+    for (let y = 0; y < world.gridRows; y++) {
+      for (let x = 0; x < world.gridCols; x++) {
         if (world.grid[y][x].owner === playerId || world.grid[y][x].type !== 'desk') continue;
         const adj = [[y-1,x],[y+1,x],[y,x-1],[y,x+1]];
-        if (adj.some(([ny,nx]) => ny >= 0 && ny < world.gridSize && nx >= 0 && nx < world.gridSize && world.grid[ny][nx].owner === playerId)) {
+        if (adj.some(([ny,nx]) => ny >= 0 && ny < world.gridRows && nx >= 0 && nx < world.gridCols && world.grid[ny][nx].owner === playerId)) {
           expandable.add(`${y},${x}`);
         }
       }
@@ -251,7 +255,7 @@ export default function OfficePage() {
 
           {/* Map */}
           <div className="bg-white rounded-xl shadow-sm border border-orange-200 p-4 overflow-x-auto">
-            <div className="grid gap-1.5 mx-auto" style={{ gridTemplateColumns: `repeat(${world.gridSize}, minmax(50px, 70px))`, width: 'fit-content' }}>
+            <div className="grid gap-1.5 mx-auto" style={{ gridTemplateColumns: `repeat(${world.gridCols}, minmax(40px, 56px))`, width: 'fit-content' }}>
               {world.grid.map((row, y) =>
                 row.map((cell, x) => {
                   const isMe = cell.owner === playerId;
@@ -262,6 +266,9 @@ export default function OfficePage() {
                     <OfficeCell
                       key={`${y}-${x}`}
                       type={cell.type}
+                      zone={cell.zone}
+                      zoneColor={cell.zoneColor}
+                      zoneName={cell.zoneName}
                       owner={cell.owner}
                       ownerName={ownerData?.nickname}
                       ownerColor={ownerData?.color}

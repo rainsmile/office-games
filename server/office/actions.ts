@@ -76,8 +76,7 @@ function resolveWork(wm: WorldManager, player: OfficePlayer, events: ActionEvent
 function resolveExpand(wm: WorldManager, player: OfficePlayer, action: PendingAction, events: ActionEvent[]) {
   const { x, y } = action;
   if (x === undefined || y === undefined) return;
-  const gs = wm.getGridSize();
-  if (y < 0 || y >= gs || x < 0 || x >= gs) return;
+  if (y < 0 || y >= wm.getGridRows() || x < 0 || x >= wm.getGridCols()) return;
 
   const cell = wm.world.grid[y][x];
   if (cell.type !== 'desk') return;

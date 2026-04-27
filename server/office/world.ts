@@ -1,14 +1,16 @@
 import fs from 'fs';
 import path from 'path';
+import { getFloorPlan, GRID_ROWS, GRID_COLS, ZONES } from './floor-plan';
+import type { FloorCell } from './floor-plan';
 
 const SAVE_PATH = path.join(__dirname, '../../data/office-world.json');
-const GRID_SIZE = 8;
 const CYCLE_SECONDS = 5;
 
-export type CellType = 'desk' | 'meeting' | 'break' | 'plant' | 'server-room' | 'empty';
-
 export interface OfficeCell {
-  type: CellType;
+  type: string;
+  zone: string;
+  zoneColor: string;
+  zoneName: string;
   owner: string | null;
   level: number;
 }
@@ -32,28 +34,22 @@ export interface OfficeWorld {
   log: { text: string; time: number }[];
 }
 
-const FLOOR_PLAN: CellType[][] = [
-  ['desk','desk','desk','meeting','meeting','desk','desk','desk'],
-  ['desk','desk','desk','meeting','meeting','desk','desk','desk'],
-  ['desk','desk','desk','empty','empty','desk','desk','desk'],
-  ['plant','empty','empty','empty','empty','empty','empty','plant'],
-  ['desk','desk','desk','empty','empty','desk','desk','desk'],
-  ['desk','desk','desk','break','break','desk','desk','desk'],
-  ['desk','desk','desk','break','server-room','desk','desk','desk'],
-  ['desk','desk','desk','plant','plant','desk','desk','desk'],
-];
-
 const PLAYER_COLORS = [
-  '#4a90d9','#d94a4a','#4ad97a','#d9a84a',
-  '#9b59b6','#1abc9c','#e74c8c','#3498db',
-  '#e67e22','#2ecc71','#e74c3c','#8e44ad',
+  '#e74c3c','#3498db','#2ecc71','#f39c12',
+  '#9b59b6','#1abc9c','#e67e22','#e91e63',
+  '#00bcd4','#8bc34a','#ff5722','#673ab7',
 ];
 
-function createEmptyWorld(): OfficeWorld {
-  const grid: OfficeCell[][] = FLOOR_PLAN.map(row =>
-    row.map(type => ({ type, owner: null, level: 1 }))
+function createWorld(): OfficeWorld {
+  const floorPlan = getFloorPlan();
+  const grid: OfficeCell[][] = floorPlan.map(row =>
+    row.map(fc => ({ ...fc, owner: null, level: 1 }))
   );
   return { grid, players: {}, tick: 0, log: [] };
+}
+
+function isValidSave(data: any): boolean {
+  return data?.grid?.length === GRID_ROWS && data.grid[0]?.length === GRID_COLS;
 }
 
 export class WorldManager {
@@ -68,23 +64,21 @@ export class WorldManager {
     try {
       if (fs.existsSync(SAVE_PATH)) {
         const data = JSON.parse(fs.readFileSync(SAVE_PATH, 'utf-8'));
-        return data as OfficeWorld;
+        if (isValidSave(data)) return data as OfficeWorld;
       }
     } catch {}
-    return createEmptyWorld();
+    return createWorld();
   }
 
   save() {
     if (!this.dirty) return;
     try {
-      fs.writeFileSync(SAVE_PATH, JSON.stringify(this.world, null, 2));
+      fs.writeFileSync(SAVE_PATH, JSON.stringify(this.world));
       this.dirty = false;
     } catch {}
   }
 
-  markDirty() {
-    this.dirty = true;
-  }
+  markDirty() { this.dirty = true; }
 
   addPlayer(nickname: string, existingId?: string): OfficePlayer {
     if (existingId && this.world.players[existingId]) {
@@ -99,15 +93,10 @@ export class WorldManager {
     const id = 'op_' + Math.random().toString(36).slice(2, 10);
     const colorIdx = Object.keys(this.world.players).length;
     const player: OfficePlayer = {
-      id,
-      nickname,
+      id, nickname,
       color: PLAYER_COLORS[colorIdx % PLAYER_COLORS.length],
-      coins: 20,
-      energy: 5,
-      kpi: 0,
-      online: true,
-      lastSeen: Date.now(),
-      joinedAt: Date.now(),
+      coins: 20, energy: 5, kpi: 0,
+      online: true, lastSeen: Date.now(), joinedAt: Date.now(),
     };
 
     this.world.players[id] = player;
@@ -132,59 +121,78 @@ export class WorldManager {
     if (offlineCycles <= 0) return;
 
     const cellCount = this.countCells(player.id);
-    const passivePerCycle = cellCount;
-    const offlineRate = 0.3;
-    const earned = Math.floor(offlineCycles * passivePerCycle * offlineRate);
+    const earned = Math.floor(offlineCycles * cellCount * 0.3);
     if (earned > 0) {
       player.coins += earned;
-      this.addLog(`${player.nickname} 回来了，离线赚了 ${earned} 金币`);
+      this.addLog(`${player.nickname} 回来了，离线赚了 ${earned} 💰`);
     }
   }
 
   private assignStartingCells(playerId: string) {
-    const desks = this.getEmptyDesks();
-    const toAssign = Math.min(2, desks.length);
-    const shuffled = desks.sort(() => Math.random() - 0.5);
+    // Pick a random zone that has available desks
+    const zoneIds = Object.keys(ZONES);
+    const shuffledZones = zoneIds.sort(() => Math.random() - 0.5);
 
-    // Try to pick 2 adjacent desks
-    for (let i = 0; i < shuffled.length && toAssign > 0; i++) {
-      const [y, x] = shuffled[i];
-      if (this.world.grid[y][x].owner !== null) continue;
-      this.world.grid[y][x].owner = playerId;
-
-      // Find adjacent empty desk
-      const adj = this.getAdjacentDesks(y, x);
-      for (const [ay, ax] of adj) {
-        if (this.world.grid[ay][ax].owner === null) {
-          this.world.grid[ay][ax].owner = playerId;
+    for (const zoneId of shuffledZones) {
+      const desks = this.getEmptyDesksInZone(zoneId);
+      if (desks.length >= 2) {
+        // Find two adjacent desks in this zone
+        for (const [y, x] of desks) {
+          if (this.world.grid[y][x].owner !== null) continue;
+          this.world.grid[y][x].owner = playerId;
+          const adj = this.getAdjacentDesks(y, x);
+          for (const [ay, ax] of adj) {
+            if (this.world.grid[ay][ax].owner === null && this.world.grid[ay][ax].zone === zoneId) {
+              this.world.grid[ay][ax].owner = playerId;
+              return;
+            }
+          }
+          // If no adjacent in same zone, just take one desk
           return;
         }
       }
-      return;
+    }
+
+    // Fallback: any two empty desks
+    const allDesks = this.getAllEmptyDesks();
+    for (const [y, x] of allDesks.slice(0, 2)) {
+      this.world.grid[y][x].owner = playerId;
     }
   }
 
-  private getEmptyDesks(): [number, number][] {
+  private getEmptyDesksInZone(zoneId: string): [number, number][] {
     const result: [number, number][] = [];
-    for (let y = 0; y < GRID_SIZE; y++) {
-      for (let x = 0; x < GRID_SIZE; x++) {
-        if (this.world.grid[y][x].type === 'desk' && this.world.grid[y][x].owner === null) {
+    for (let y = 0; y < GRID_ROWS; y++) {
+      for (let x = 0; x < GRID_COLS; x++) {
+        const c = this.world.grid[y][x];
+        if (c.type === 'desk' && c.zone === zoneId && c.owner === null) {
           result.push([y, x]);
         }
       }
     }
-    return result;
+    return result.sort(() => Math.random() - 0.5);
+  }
+
+  private getAllEmptyDesks(): [number, number][] {
+    const result: [number, number][] = [];
+    for (let y = 0; y < GRID_ROWS; y++) {
+      for (let x = 0; x < GRID_COLS; x++) {
+        const c = this.world.grid[y][x];
+        if (c.type === 'desk' && c.owner === null) result.push([y, x]);
+      }
+    }
+    return result.sort(() => Math.random() - 0.5);
   }
 
   getAdjacentDesks(y: number, x: number): [number, number][] {
     return ([[y-1,x],[y+1,x],[y,x-1],[y,x+1]] as [number,number][])
-      .filter(([ny,nx]) => ny >= 0 && ny < GRID_SIZE && nx >= 0 && nx < GRID_SIZE)
+      .filter(([ny,nx]) => ny >= 0 && ny < GRID_ROWS && nx >= 0 && nx < GRID_COLS)
       .filter(([ny,nx]) => this.world.grid[ny][nx].type === 'desk');
   }
 
   isAdjacentToOwned(y: number, x: number, playerId: string): boolean {
     return ([[y-1,x],[y+1,x],[y,x-1],[y,x+1]] as [number,number][])
-      .filter(([ny,nx]) => ny >= 0 && ny < GRID_SIZE && nx >= 0 && nx < GRID_SIZE)
+      .filter(([ny,nx]) => ny >= 0 && ny < GRID_ROWS && nx >= 0 && nx < GRID_COLS)
       .some(([ny,nx]) => this.world.grid[ny][nx].owner === playerId);
   }
 
@@ -203,6 +211,7 @@ export class WorldManager {
     if (this.world.log.length > 50) this.world.log.shift();
   }
 
-  getGridSize() { return GRID_SIZE; }
+  getGridRows() { return GRID_ROWS; }
+  getGridCols() { return GRID_COLS; }
   getCycleSeconds() { return CYCLE_SECONDS; }
 }

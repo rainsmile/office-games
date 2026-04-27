@@ -271,7 +271,8 @@ function broadcastOfficeState() {
     players: w.players,
     tick: w.tick,
     log: w.log.slice(-20),
-    gridSize: worldManager.getGridSize(),
+    gridRows: worldManager.getGridRows(),
+    gridCols: worldManager.getGridCols(),
     cycleSeconds: worldManager.getCycleSeconds(),
   };
   officeNs.emit('office:state', clientState);

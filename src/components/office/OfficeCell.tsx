@@ -2,6 +2,9 @@
 
 interface OfficeCellProps {
   type: string;
+  zone: string;
+  zoneColor: string;
+  zoneName: string;
   owner: string | null;
   ownerName?: string;
   ownerColor?: string;
@@ -11,89 +14,86 @@ interface OfficeCellProps {
   onClick?: () => void;
 }
 
-const CELL_ICONS: Record<string, string> = {
-  desk: '🖥️',
-  meeting: '📋',
-  break: '☕',
-  plant: '🌿',
-  'server-room': '🖧',
-  empty: '',
-};
+export default function OfficeCell({
+  type, zone, zoneColor, zoneName,
+  owner, ownerName, ownerColor,
+  isMe, isExpandable, isTarget, onClick,
+}: OfficeCellProps) {
+  if (type === 'corridor') {
+    return <div className="w-full aspect-[5/4] rounded" style={{ backgroundColor: '#e8e4dc' }} />;
+  }
 
-const CELL_BG: Record<string, string> = {
-  desk: '#f8f4ee',
-  meeting: '#e8f0fe',
-  break: '#fef3e8',
-  plant: '#e8f8ee',
-  'server-room': '#eee8f8',
-  empty: '#f0ece4',
-};
+  if (type === 'wall') {
+    return <div className="w-full aspect-[5/4] rounded bg-gray-300" />;
+  }
 
-export default function OfficeCell({ type, owner, ownerName, ownerColor, isMe, isExpandable, isTarget, onClick }: OfficeCellProps) {
-  const bg = owner ? `${ownerColor}18` : CELL_BG[type] || '#f5f5f5';
+  if (type === 'plant') {
+    return (
+      <div className="w-full aspect-[5/4] rounded flex items-center justify-center" style={{ backgroundColor: '#e0f2e0' }}>
+        <span className="text-lg">🌿</span>
+      </div>
+    );
+  }
+
+  if (type === 'break') {
+    return (
+      <div className="w-full aspect-[5/4] rounded flex items-center justify-center" style={{ backgroundColor: '#fff3e0' }}>
+        <span className="text-lg">☕</span>
+      </div>
+    );
+  }
+
+  if (type === 'meeting') {
+    return (
+      <div className="w-full aspect-[5/4] rounded flex items-center justify-center" style={{ backgroundColor: `${zoneColor}15`, border: `1.5px solid ${zoneColor}40` }}>
+        <span className="text-lg">📋</span>
+      </div>
+    );
+  }
+
+  // Desk cell
   const canClick = isExpandable && !isMe && type === 'desk';
+  const baseBg = owner ? `${ownerColor}20` : `${zoneColor}12`;
 
   return (
     <div
       onClick={canClick ? onClick : undefined}
       className={`
-        relative w-full aspect-square rounded-lg transition-all duration-200
+        relative w-full aspect-[5/4] rounded-lg transition-all duration-200 overflow-hidden
         ${canClick ? 'cursor-pointer hover:scale-105 hover:shadow-lg' : ''}
         ${isMe ? 'ring-2 ring-yellow-400 shadow-md' : ''}
         ${isTarget ? 'ring-2 ring-blue-500 ring-offset-1 scale-105' : ''}
       `}
       style={{
-        backgroundColor: bg,
-        border: owner ? `2.5px solid ${ownerColor}` : '2px solid #e0dcd4',
+        backgroundColor: baseBg,
+        border: owner ? `2px solid ${ownerColor}` : `1.5px solid ${zoneColor}50`,
       }}
     >
-      {/* Cell content */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        {type === 'desk' && owner && (
+      {/* Zone color stripe at top */}
+      <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: zoneColor }} />
+
+      <div className="absolute inset-0 flex flex-col items-center justify-center pt-1">
+        {owner ? (
           <>
-            {/* Desk illustration */}
             <div
-              className="w-8 h-6 rounded-sm flex items-center justify-center text-xs shadow-sm mb-0.5"
+              className="w-7 h-5 rounded-sm flex items-center justify-center text-[10px] shadow-sm mb-0.5"
               style={{ backgroundColor: ownerColor, color: 'white' }}
             >
               🖥️
             </div>
-            <div className="text-[9px] font-bold truncate max-w-full px-1" style={{ color: ownerColor }}>
+            <div className="text-[8px] font-bold truncate max-w-full px-0.5" style={{ color: ownerColor }}>
               {ownerName}
             </div>
           </>
-        )}
-
-        {type === 'desk' && !owner && !isExpandable && (
-          <div className="text-lg opacity-30">🪑</div>
-        )}
-
-        {type === 'desk' && !owner && isExpandable && (
-          <div className="flex flex-col items-center">
-            <div className="w-7 h-7 rounded-full border-2 border-dashed border-blue-400 flex items-center justify-center text-blue-400 text-sm font-bold animate-pulse">
-              +
-            </div>
+        ) : isExpandable ? (
+          <div className="w-6 h-6 rounded-full border-2 border-dashed border-blue-400 flex items-center justify-center text-blue-400 text-xs font-bold animate-pulse">
+            +
           </div>
-        )}
-
-        {type === 'meeting' && (
-          <div className="text-xl">📋</div>
-        )}
-
-        {type === 'break' && (
-          <div className="text-xl">☕</div>
-        )}
-
-        {type === 'plant' && (
-          <div className="text-xl">🌿</div>
-        )}
-
-        {type === 'server-room' && (
-          <div className="text-xl">🖥️</div>
-        )}
-
-        {type === 'empty' && (
-          <div className="w-full h-full rounded-md" style={{ backgroundColor: '#e8e4dc' }} />
+        ) : (
+          <>
+            <div className="text-sm opacity-30">🪑</div>
+            <div className="text-[7px] text-gray-400 truncate max-w-full px-0.5">{zoneName}</div>
+          </>
         )}
       </div>
     </div>
