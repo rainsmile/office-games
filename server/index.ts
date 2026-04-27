@@ -5,6 +5,7 @@ import './games/quiz';
 import './games/rank';
 import './games/story';
 import './games/music';
+import './games/office';
 import { getTracksFromPlaylist } from './spotify';
 import { MusicEngine } from './games/music';
 import express from 'express';

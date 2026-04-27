@@ -1,4 +1,4 @@
-export type GameType = 'draw' | 'music' | 'emoji' | 'spy' | 'quiz' | 'rank' | 'story';
+export type GameType = 'draw' | 'music' | 'emoji' | 'spy' | 'quiz' | 'rank' | 'story' | 'office';
 
 export type RoomStatus = 'waiting' | 'playing' | 'result';
 
@@ -106,6 +106,28 @@ export interface StoryGameState {
   lastSentence: string;
   votes: Record<string, string>;
   timeLeft: number;
+}
+
+export interface OfficeCell {
+  owner: string | null;
+  level: number;
+}
+
+export interface OfficePlayerState {
+  coins: number;
+  energy: number;
+  kpi: number;
+}
+
+export interface OfficeGameState {
+  grid: OfficeCell[][];
+  players: Record<string, OfficePlayerState>;
+  pendingActions: Record<string, GameEvent>;
+  tick: number;
+  cycleDuration: number;
+  timeLeft: number;
+  totalTime: number;
+  log: { text: string; tick: number }[];
 }
 
 export interface ClientEvents {

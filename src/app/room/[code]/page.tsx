@@ -16,6 +16,7 @@ const GAMES: { id: GameType; name: string; emoji: string; minPlayers: number }[]
   { id: 'quiz', name: '抢答题', emoji: '❓', minPlayers: 2 },
   { id: 'rank', name: '排名猜猜猜', emoji: '📊', minPlayers: 2 },
   { id: 'story', name: '故事接龙', emoji: '📖', minPlayers: 2 },
+  { id: 'office', name: '办公室争霸', emoji: '🏢', minPlayers: 2 },
 ];
 
 export default function RoomPage() {

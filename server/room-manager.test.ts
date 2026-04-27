@@ -35,10 +35,10 @@ describe('RoomManager', () => {
       expect(() => rm.joinRoom('ZZZZZZ', 'Bob')).toThrow('Room not found');
     });
 
-    it('throws when room is full (6 players)', () => {
+    it('throws when room is full (8 players)', () => {
       const { code } = rm.createRoom('P1');
-      for (let i = 2; i <= 6; i++) rm.joinRoom(code, `P${i}`);
-      expect(() => rm.joinRoom(code, 'P7')).toThrow('Room is full');
+      for (let i = 2; i <= 8; i++) rm.joinRoom(code, `P${i}`);
+      expect(() => rm.joinRoom(code, 'P9')).toThrow('Room is full');
     });
   });
 

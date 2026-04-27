@@ -1,7 +1,7 @@
 import { v4 as uuid } from 'uuid';
 import type { Player, Room, RoomSettings, GameType } from '../src/lib/types';
 
-const PLAYER_COLORS = ['#ff6b6b', '#ffa502', '#2ed573', '#1e90ff', '#a55eea', '#ff6348'];
+const PLAYER_COLORS = ['#ff6b6b', '#ffa502', '#2ed573', '#1e90ff', '#a55eea', '#ff6348', '#ff7eb3', '#00d2d3'];
 
 interface InternalRoom extends Room {
   lastActivity: number;
@@ -51,7 +51,7 @@ export class RoomManager {
   joinRoom(code: string, nickname: string): { player: Player } {
     const room = this.rooms.get(code);
     if (!room) throw new Error('Room not found');
-    if (room.players.length >= 6) throw new Error('Room is full');
+    if (room.players.length >= 8) throw new Error('Room is full');
 
     const player: Player = {
       id: uuid(),
